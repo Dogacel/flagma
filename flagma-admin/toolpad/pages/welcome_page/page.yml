@@ -1,0 +1,166 @@
+apiVersion: v1
+kind: page
+spec:
+  id: e1js-I0
+  title: Default page
+  content:
+    - component: PageRow
+      name: pageRow4
+      children:
+        - component: Container
+          name: container
+          children:
+            - component: PageRow
+              name: pageRow2
+              children:
+                - component: PageColumn
+                  name: pageColumn
+                  layout:
+                    columnSize: 1
+                  children:
+                    - component: Text
+                      name: text
+                      props:
+                        mode: markdown
+                        value: >-
+                          # Welcome
+
+
+                          Welcome to **_Flagma_**'s Admin Panel.
+
+
+                          ## Setup
+
+
+                          Make sure you are running **Flagma** and **Central Dogma**
+                    - component: PageRow
+                      name: pageRow
+                      props:
+                        justifyContent: start
+                      children:
+                        - component: PageColumn
+                          name: pageColumn1
+                          layout:
+                            columnSize: 1
+                          children:
+                            - component: DataGrid
+                              name: dataGrid
+                              layout:
+                                columnSize: 1.1717791411042944
+                              props:
+                                rows:
+                                  $$jsExpression: |
+                                    getAllFlags.data
+                                columns:
+                                  - field: name
+                                    type: string
+                                    headerName: Flag Name
+                                  - field: enabled
+                                    type: boolean
+                                    headerName: Enabled
+                                density: compact
+                                rowIdField: name
+    - component: PageRow
+      name: pageRow1
+      children:
+        - component: Container
+          name: container1
+          children:
+            - component: PageRow
+              name: pageRow3
+              children:
+                - component: TextField
+                  name: textField
+                  layout:
+                    columnSize: 0.48261758691206547
+                    horizontalAlign: end
+                  props:
+                    label: Flag Name
+                    isRequired: true
+                    name: flagNameInput
+                - component: PageColumn
+                  name: pageColumn2
+                  layout:
+                    columnSize: 1.5173824130879345
+                  children:
+                    - component: PageRow
+                      name: pageRow5
+                      props:
+                        justifyContent: start
+                      children:
+                        - component: codeComponent.Switch
+                          name: codeComponent_Switch
+                          layout:
+                            columnSize: 0.8969439599605672
+                          props:
+                            label: Enabled
+                            onClick:
+                              $$jsExpressionAction: ""
+                            onChange:
+                              $$jsExpressionAction: ""
+                        - component: Button
+                          name: button
+                          props:
+                            size: medium
+                            content: Submit Change
+                            onClick:
+                              $$jsExpressionAction: >-
+                                {
+                                  await updateFlag.call({enabled: codeComponent_Switch.value ?? false, flagName: textField.value});
+                                  await getAllFlags.refetch();
+                                }
+                          layout:
+                            columnSize: 0.8908773792371275
+                        - component: Text
+                          name: text1
+                          layout:
+                            columnSize: 0.4292740250696379
+                            horizontalAlign: end
+                          props:
+                            mode: markdown
+                            value: "**Response:**"
+                        - component: Text
+                          name: text2
+                          layout:
+                            columnSize: 1.7827298050139275
+                            horizontalAlign: start
+                          props:
+                            mode: text
+                            value:
+                              $$jsExpression: >
+                                updateFlag.error?.message ?? updateFlag.data ??
+                                ""
+                            sx:
+                              height: 32px
+  queries:
+    - name: getAllFlags
+      query:
+        kind: rest
+        url: http://localhost:9000/flags
+        headers: []
+        method: GET
+        searchParams: []
+      mode: query
+      refetchInterval: 10000
+    - name: updateFlag
+      enabled: false
+      mode: mutation
+      query:
+        kind: rest
+        url:
+          $$jsExpression: |
+            "http://localhost:9000/flags/" + parameters.flagName
+        searchParams:
+          - name: enabled
+            value:
+              $$jsExpression: |
+                parameters.enabled
+        headers: []
+        method: PUT
+        response:
+          kind: raw
+      parameters:
+        - name: enabled
+          value: "false"
+        - name: flagName
+          value: foo
