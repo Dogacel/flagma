@@ -9,6 +9,7 @@ import com.linecorp.centraldogma.client.armeria.ArmeriaCentralDogmaBuilder
 import flagma.server.*
 import flagma.server.flag.FlagController
 import flagma.server.flag.FlagService
+import flagma.server.flag.FlagStreamController
 import flagma.server.project.ProjectController
 import flagma.server.project.ProjectService
 import kotlinx.coroutines.future.await
@@ -41,6 +42,7 @@ suspend fun main() {
                 singleOf<ProjectService>(::ProjectService)
                 singleOf<FlagController>(::FlagController)
                 singleOf<FlagService>(::FlagService)
+                singleOf<FlagStreamController>(::FlagStreamController)
             }
         )
     }.koin
@@ -53,6 +55,7 @@ suspend fun main() {
         .serviceUnder("/docs", DocService.builder().build())
         .annotatedService("/flags", koin.get<FlagController>())
         .annotatedService("/projects", koin.get<ProjectController>())
+        .annotatedService("/stream/flags", koin.get<FlagStreamController>())
         .build()
 
     server.start().await()

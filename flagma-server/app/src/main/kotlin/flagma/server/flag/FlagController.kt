@@ -25,10 +25,19 @@ class FlagController : KoinComponent {
         return flagService.getFlag(project, flag)
     }
 
-    @Post("/{project}/{flag}")
+    @Post("/{project}")
     @ProducesText
-    suspend fun createFlag(@Param project: String, @Param flag: String): String {
-        return flagService.createFlag(project, flag)
+    suspend fun createFlag(@Param project: String, createFlagBody: CreateFlagBody): String {
+        return flagService.createFlag(project, createFlagBody)
+    }
+
+    @Put("/{project}/{flag}")
+    suspend fun updateFlagValue(
+        @Param project: String,
+        @Param flag: String,
+        updateFlagValue: UpdateFlagValue<Any>
+    ): Flag<Any>? {
+        return flagService.updateFlagValue(project, flag, updateFlagValue)
     }
 
     @Delete("/{project}/{flag}")
