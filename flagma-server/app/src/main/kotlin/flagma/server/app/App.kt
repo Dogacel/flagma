@@ -1,5 +1,7 @@
 package flagma.server.app
 
+import com.fasterxml.jackson.databind.ObjectMapper
+import com.fasterxml.jackson.module.kotlin.jacksonObjectMapper
 import com.linecorp.armeria.common.SessionProtocol
 import com.linecorp.armeria.server.Server
 import com.linecorp.armeria.server.docs.DocService
@@ -10,6 +12,7 @@ import flagma.server.*
 import flagma.server.flag.FlagController
 import flagma.server.flag.FlagService
 import flagma.server.flag.FlagStreamController
+import flagma.server.flag.FlagStreamService
 import flagma.server.project.ProjectController
 import flagma.server.project.ProjectService
 import kotlinx.coroutines.future.await
@@ -43,6 +46,8 @@ suspend fun main() {
                 singleOf<FlagController>(::FlagController)
                 singleOf<FlagService>(::FlagService)
                 singleOf<FlagStreamController>(::FlagStreamController)
+                singleOf<FlagStreamService>(::FlagStreamService)
+                single<ObjectMapper> { jacksonObjectMapper() }
             }
         )
     }.koin

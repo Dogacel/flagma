@@ -10,6 +10,9 @@ object Initializer : KoinComponent {
     private val logger = LoggerFactory.getLogger(Initializer::class.java)
     private val dogma: CentralDogma by inject()
 
+    /**
+     * Initialize the central dogma project and repositories. This method is idempotent.
+     */
     fun initializeProject() {
         val projects = dogma.listProjects().join()
         if (Config.CentralDogma.PROJECT_NAME !in projects) {

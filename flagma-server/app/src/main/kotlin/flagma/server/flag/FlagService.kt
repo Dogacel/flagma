@@ -1,6 +1,7 @@
 package flagma.server.flag
 
 import com.fasterxml.jackson.databind.JsonNode
+import com.fasterxml.jackson.databind.ObjectMapper
 import com.linecorp.centraldogma.client.CentralDogmaRepository
 import com.linecorp.centraldogma.common.*
 import flagma.server.Config
@@ -15,13 +16,21 @@ import flagma.server.project.ProjectService.Companion.FLAGS_FILE_NAME
 import org.slf4j.LoggerFactory
 import java.lang.IllegalArgumentException
 
+/**
+ * Flag service is responsible for CRUD operations on Flags and persistence of Flags.
+ */
 class FlagService : KoinComponent {
     private val logger = LoggerFactory.getLogger(FlagService::class.java)
 
     private val projectsRepository: CentralDogmaRepository by inject(named(Config.CentralDogma.PROJECTS_REPOSITORY_NAME))
-    val mapper = jacksonObjectMapper()
+    private val mapper: ObjectMapper by inject()
 
-
+    /**
+     * Get all flags inside a project.
+     *
+     * @param project project name
+     * @return list of flags
+     */
     suspend fun getAllFlags(project: String): List<Flag<Any>> {
         val flagEntry: Entry<JsonNode> = projectsRepository.file(
             Query.ofJson("/$project/$FLAGS_FILE_NAME")
@@ -42,6 +51,14 @@ class FlagService : KoinComponent {
         }
     }
 
+    /**
+     * Get a flag.
+     *
+     * @param T type of flag, if unknown, use Any
+     * @param project name of the project
+     * @param flagName name of the flag
+     * @return the flag if exists else null
+     */
     suspend fun <T> getFlag(project: String, flagName: String): Flag<T>? {
         val flag = try {
             val flagEntry: Entry<JsonNode> = projectsRepository.file(
@@ -49,7 +66,6 @@ class FlagService : KoinComponent {
             ).get().await()
 
             if (flagEntry.hasContent()) {
-                logger.info(flagEntry.content().toPrettyString())
                 mapper.readValue<Flag<T>>(flagEntry.content().toString())
             } else {
                 null
@@ -62,6 +78,13 @@ class FlagService : KoinComponent {
         return flag
     }
 
+    /**
+     * Create flag inside a project.
+     *
+     * @param project name of the project
+     * @param createFlagBody parameters to create the flag
+     * @return a message indicating the result of the operation
+     */
     suspend fun createFlag(project: String, createFlagBody: CreateFlagBody): String {
         if (getFlag<Any>(project, createFlagBody.name) != null) {
             return "Flag ${createFlagBody.name} already exists"
@@ -90,6 +113,14 @@ class FlagService : KoinComponent {
         return "Created at " + result.whenAsText() + ", Revision: " + result.revision().text()
     }
 
+    /**
+     * Update value of a flag.
+     *
+     * @param project name of the project
+     * @param flagName name of the flag
+     * @param updateFlagValue parameter to update the value of the flag
+     * @return a message indicating the result of the operation
+     */
     suspend fun updateFlagValue(
         project: String,
         flagName: String,
@@ -117,6 +148,13 @@ class FlagService : KoinComponent {
         return newFlag
     }
 
+    /**
+     * Delete a flag.
+     *
+     * @param project project name
+     * @param flagName flag name
+     * @return a message indicating the result of the operation
+     */
     suspend fun deleteFlag(project: String, flagName: String): String {
         val result =
             projectsRepository.commit(

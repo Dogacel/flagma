@@ -8,6 +8,9 @@ import org.koin.core.component.inject
 import org.slf4j.LoggerFactory
 
 
+/**
+ * Flag controller enables CRUD operations on flags via HTTP requests.
+ */
 @ProducesJson
 @LoggingDecorator(requestLogLevel = LogLevel.INFO, samplingRate = 1.0f)
 class FlagController : KoinComponent {
@@ -36,7 +39,7 @@ class FlagController : KoinComponent {
         @Param project: String,
         @Param flag: String,
         updateFlagValue: UpdateFlagValue<Any>
-    ): Flag<Any>? {
+    ): Flag<Any> {
         return flagService.updateFlagValue(project, flag, updateFlagValue)
     }
 

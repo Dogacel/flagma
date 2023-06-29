@@ -4,7 +4,6 @@ import com.linecorp.centraldogma.client.CentralDogmaRepository
 import com.linecorp.centraldogma.common.Change
 import com.linecorp.centraldogma.common.PathPattern
 import flagma.server.Config
-import flagma.server.Project
 import kotlinx.coroutines.future.await
 import org.koin.core.component.KoinComponent
 import org.koin.core.component.inject
@@ -26,7 +25,7 @@ class ProjectService : KoinComponent {
         return projects.map {
             Project(
                 name = it.key,
-                booleanFlags = listOf(),
+                flags = listOf(),
             )
         }
     }
