@@ -7,8 +7,7 @@ import com.linecorp.centraldogma.client.Watcher
 import com.linecorp.centraldogma.common.Query
 import flagma.server.Config
 import flagma.server.project.ProjectService.Companion.FLAGS_FILE_NAME
-import kotlinx.coroutines.flow.Flow
-import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.*
 import kotlinx.coroutines.future.await
 import kotlinx.coroutines.sync.Mutex
 import kotlinx.coroutines.sync.withLock
@@ -27,17 +26,17 @@ class FlagStreamService : KoinComponent {
     private val mapper: ObjectMapper by inject()
 
     /**
-     * We have only a single watcher per project or feature flag, thus concurrent writes to the watchers will
+     * We have only a single watcher per project or feature flag, thus concurrent writes to the watcher map will
      * result in excessive watchers to be created. This mutex ensures that only a single watcher is created per
      * project or feature flag.
      */
     private val watcherMutex = Mutex()
 
     /**
-     * Project watchers are stored in-memory to optimize performance. Each watcher can be used more than once
-     * to serve updates on projects to different flows.
+     * We have only a single flag flow per feature flag, thus concurrent attempts to set a flow inside the
+     * [flagFlows] should be prevented to avoid having multiple flows.
      */
-    private val projectWatchers: MutableMap<String, Watcher<List<Flag<Any>>>> = mutableMapOf()
+    private val flagFlowMutex = Mutex()
 
     /**
      * Flag watchers are stored in-memory to optimize performance. Each watcher can be used more than once
@@ -46,32 +45,25 @@ class FlagStreamService : KoinComponent {
     private val flagWatchers: MutableMap<String, Watcher<Flag<Any>>> = mutableMapOf()
 
     /**
+     * Each feature flag is served by a single flow. This map stores the streams for each feature flag.
+     */
+    private val flagFlows: MutableMap<String, Flow<Flag<Any>>> = mutableMapOf()
+
+    /**
      * Stream all flags from the project, emitted everytime a flag is updated in the project.
      *
      * @param project project name
      * @return a flow that emits whenever a flag is updated in the project
      */
     suspend fun streamAllFlags(project: String): Flow<List<Flag<Any>>> {
-        if (project !in project) {
-            // Prevent concurrent requests from creating multiple watcher simultaneously.
-            watcherMutex.withLock {
-                // Another thread might have created the watcher while we were waiting for the mutex.
-                // Don't create a second one by overriding the last if it exists now.
-                if (project !in project) {
-                    projectWatchers[project] = projectsRepository.watcher(
-                        Query.ofJson("/$project/$FLAGS_FILE_NAME")
-                    ).map {
-                        mapper.readValue<Map<String, Flag<Any>>>(it.toString()).values.toList()
-                    }.start()
-                    // Wait for initial value to be available. This makes sure `latestValue` won't fail for
-                    // existing flags.
-                    projectWatchers[project]!!.initialValueFuture().await()
-                }
-            }
-        }
+        val watcher = projectsRepository.watcher(
+            Query.ofJson("/$project/$FLAGS_FILE_NAME")
+        ).map {
+            mapper.readValue<Map<String, Flag<Any>>>(it.toString()).values.toList()
+        }.start()
 
-        val watcher = projectWatchers[project]!!
-        val latestValue = watcher.latestValue() ?: throw IllegalStateException("Watcher has not started yet")
+        val latestValue = watcher.initialValueFuture().await().value()
+            ?: throw IllegalStateException("Value doesn't exist.")
         val mutableFlow: MutableStateFlow<List<Flag<Any>>> = MutableStateFlow(latestValue)
         watcher.watch { flags ->
             mutableFlow.tryEmit(flags)
@@ -99,20 +91,25 @@ class FlagStreamService : KoinComponent {
                     ).map {
                         mapper.readValue<Flag<Any>>(it.toString())
                     }.start()
-                    // Wait for initial value to be available. This makes sure `latestValue` won't fail for
-                    // existing flags.
-                    flagWatchers[flagID]!!.initialValueFuture().await()
                 }
             }
         }
 
-        val watcher = flagWatchers[flagID]!!
-        val lastValue = watcher.latestValue() ?: throw IllegalArgumentException("Flag $flagName not found")
-        val mutableFlow: MutableStateFlow<Flag<Any>> = MutableStateFlow(lastValue)
-        watcher.watch { flags ->
-            logger.info("Hello! $flags")
-            mutableFlow.tryEmit(flags)
+        if (flagID !in flagFlows) {
+            flagFlowMutex.withLock {
+                // Another thread might have created the flow while we were waiting for the mutex.
+                // Don't create a second one by overriding the last if it exists now.
+                if (flagID !in flagFlows) {
+                    val watcher = flagWatchers[flagID]!!
+                    val lastValue = watcher.initialValueFuture().await().value()
+                        ?: throw IllegalArgumentException("Flag $flagName not found")
+                    val mutableFlow: MutableStateFlow<Flag<Any>> = MutableStateFlow(lastValue)
+                    watcher.watch { flags -> mutableFlow.tryEmit(flags) }
+                    flagFlows[flagID] = mutableFlow
+                }
+            }
         }
-        return mutableFlow
+
+        return flagFlows[flagID]!!
     }
 }
