@@ -4,6 +4,7 @@ import com.fasterxml.jackson.databind.ObjectMapper
 import com.linecorp.armeria.common.logging.LogLevel
 import com.linecorp.armeria.common.sse.ServerSentEvent
 import com.linecorp.armeria.server.annotation.*
+import com.linecorp.armeria.server.annotation.decorator.CorsDecorator
 import com.linecorp.armeria.server.annotation.decorator.LoggingDecorator
 import com.linecorp.armeria.server.annotation.decorator.RequestTimeout
 import kotlinx.coroutines.flow.*
@@ -17,6 +18,7 @@ import org.slf4j.LoggerFactory
  * in-memory for fast access without needing to make a network call.
  */
 @LoggingDecorator(requestLogLevel = LogLevel.INFO, samplingRate = 1.0f)
+@CorsDecorator(origins = ["*"])
 class FlagStreamController : KoinComponent {
     private val logger = LoggerFactory.getLogger(FlagStreamController::class.java)
     private val mapper: ObjectMapper by inject()
@@ -32,7 +34,7 @@ class FlagStreamController : KoinComponent {
     @Get("/{project}")
     @ProducesEventStream
     @RequestTimeout(0)
-    fun getAllFlags(@Param project: String): Flow<ServerSentEvent> {
+    suspend fun getAllFlags(@Param project: String): Flow<ServerSentEvent> {
         return flagStreamService.streamAllFlags(project).map {
             ServerSentEvent.ofData(mapper.writeValueAsString(it))
         }
@@ -77,6 +79,7 @@ class FlagStreamController : KoinComponent {
         // TODO: Handle invalid flags or individual failures
         val flows = projectFlagPairs.map { (project, flag) -> flagStreamService.streamFlag(project, flag) }
 
+        // TODO: This can be optimized, no need to maintain a separate flow for each flag
         return flows.merge().map { flag ->
             ServerSentEvent
                 .builder()

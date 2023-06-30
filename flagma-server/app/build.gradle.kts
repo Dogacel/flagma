@@ -13,6 +13,7 @@ dependencies {
     implementation(armeriaLib.armeria.kotlin)
     implementation(armeriaLib.kotlin.coroutines.core)
 
+    implementation("net.logstash.logback:logstash-logback-encoder:7.4")
     runtimeOnly(armeriaLib.logback14)
 
     implementation("com.fasterxml.jackson.module:jackson-module-kotlin:2.15.2")
