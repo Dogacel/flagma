@@ -1,4 +1,6 @@
-# Flagma - Low latency, high throughput open-source feature flag manaer
+# Flagma - Low latency, high throughput open-source feature flag manager
+
+[![Build flagma-server](https://github.com/Dogacel/flagma/actions/workflows/build-server.yml/badge.svg?event=push)](https://github.com/Dogacel/flagma/actions/workflows/build-server.yml)
 
 Based on Central Dogma and Armeria.
 
