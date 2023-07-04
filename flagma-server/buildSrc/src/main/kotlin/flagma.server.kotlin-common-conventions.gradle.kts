@@ -17,8 +17,10 @@ dependencies {
         implementation("com.linecorp.armeria:armeria-version-catalog:1.24.1")
     }
 
-    // Use JUnit Jupiter for testing.
-    testImplementation("org.junit.jupiter:junit-jupiter:5.9.1")
+    testImplementation("io.kotest:kotest-runner-junit5:5.6.2")
+    testImplementation("io.kotest:kotest-extensions-junit5:5.6.2")
+    testImplementation("io.kotest:kotest-assertions-core:5.6.2")
+    testImplementation("io.kotest:kotest-property:5.6.2")
 }
 
 tasks.named<Test>("test") {

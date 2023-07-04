@@ -1,60 +1,28 @@
 package flagma.server.app
 
-import com.fasterxml.jackson.databind.ObjectMapper
-import com.fasterxml.jackson.module.kotlin.jacksonObjectMapper
 import com.linecorp.armeria.common.SessionProtocol
 import com.linecorp.armeria.server.Server
 import com.linecorp.armeria.server.docs.DocService
-import com.linecorp.centraldogma.client.CentralDogma
-import com.linecorp.centraldogma.client.CentralDogmaRepository
-import com.linecorp.centraldogma.client.armeria.ArmeriaCentralDogmaBuilder
-import flagma.server.*
 import flagma.server.flag.FlagController
-import flagma.server.flag.FlagService
 import flagma.server.flag.FlagStreamController
-import flagma.server.flag.FlagStreamService
 import flagma.server.project.ProjectController
-import flagma.server.project.ProjectService
 import kotlinx.coroutines.future.await
+import org.koin.core.Koin
 import org.koin.core.context.startKoin
-import org.koin.core.module.dsl.singleOf
-import org.koin.core.qualifier.named
-import org.koin.dsl.module
 
-
-suspend fun main() {
-    val koin = startKoin {
+fun startKoin(): Koin {
+    return startKoin {
         modules(
-            module {
-                single<CentralDogma> {
-                    try {
-                        ArmeriaCentralDogmaBuilder()
-                            .host(Config.CentralDogma.HOST, Config.CentralDogma.PORT)
-                            .build()
-                    } catch (e: Exception) {
-                        throw e
-                    }
-                }
-                single<CentralDogmaRepository>(named(Config.CentralDogma.PROJECTS_REPOSITORY_NAME)) {
-                    get<CentralDogma>().forRepo(
-                        Config.CentralDogma.PROJECT_NAME,
-                        Config.CentralDogma.PROJECTS_REPOSITORY_NAME
-                    )
-                }
-                singleOf<ProjectController>(::ProjectController)
-                singleOf<ProjectService>(::ProjectService)
-                singleOf<FlagController>(::FlagController)
-                singleOf<FlagService>(::FlagService)
-                singleOf<FlagStreamController>(::FlagStreamController)
-                singleOf<FlagStreamService>(::FlagStreamService)
-                single<ObjectMapper> { jacksonObjectMapper() }
-            }
+            Modules.integrationModules,
+            Modules.controllerModules,
+            Modules.serviceModules,
+            Modules.utilityModules,
         )
     }.koin
+}
 
-    Initializer.initializeProject()
-
-    val server = Server.builder()
+fun buildServer(koin: Koin): Server {
+    return Server.builder()
         .port(9000, SessionProtocol.HTTP, SessionProtocol.HTTPS)
         .tlsSelfSigned()
         .serviceUnder("/docs", DocService.builder().build())
@@ -62,6 +30,12 @@ suspend fun main() {
         .annotatedService("/projects", koin.get<ProjectController>())
         .annotatedService("/stream/flags", koin.get<FlagStreamController>())
         .build()
+}
+
+suspend fun main() {
+    val koin = startKoin()
+    Initializer.initializeProject()
+    val server = buildServer(koin)
 
     server.start().await()
 }

@@ -15,6 +15,7 @@ import org.koin.core.component.KoinComponent
 import org.koin.core.component.inject
 import org.koin.core.qualifier.named
 import org.slf4j.LoggerFactory
+import java.util.concurrent.CompletableFuture
 
 /**
  * Flag stream service serves flows of flags. Those flows are updated whenever the underlying flag is updated.
@@ -43,6 +44,7 @@ class FlagStreamService : KoinComponent {
      * to serve updates on flags to different flows.
      */
     private val flagWatchers: MutableMap<String, Watcher<Flag<Any>>> = mutableMapOf()
+    private val projectWatchers: MutableMap<String, Watcher<List<Flag<Any>>>> = mutableMapOf()
 
     /**
      * Each feature flag is served by a single flow. This map stores the streams for each feature flag.
@@ -50,24 +52,33 @@ class FlagStreamService : KoinComponent {
     private val flagFlows: MutableMap<String, Flow<Flag<Any>>> = mutableMapOf()
 
     /**
-     * Stream all flags from the project, emitted everytime a flag is updated in the project.
+     * Stream all flags from the project, emitted everytime a flag is updated in the project. Initial values
+     * are also emitted when the stream is consumed for the first time.
      *
      * @param project project name
      * @return a flow that emits whenever a flag is updated in the project
      */
-    suspend fun streamAllFlags(project: String): Flow<List<Flag<Any>>> {
-        val watcher = projectsRepository.watcher(
-            Query.ofJson("/$project/$FLAGS_FILE_NAME")
-        ).map {
-            mapper.readValue<Map<String, Flag<Any>>>(it.toString()).values.toList()
-        }.start()
-
-        val latestValue = watcher.initialValueFuture().await().value()
-            ?: throw IllegalStateException("Value doesn't exist.")
-        val mutableFlow: MutableStateFlow<List<Flag<Any>>> = MutableStateFlow(latestValue)
-        watcher.watch { flags ->
-            mutableFlow.tryEmit(flags)
+    suspend fun streamProjectFlags(project: String): Flow<Flag<Any>> {
+        if (project !in projectWatchers) {
+            watcherMutex.withLock {
+                // Another thread might have created the watcher while we were waiting for the mutex.
+                // Don't create a second one by overriding the last if it exists now.
+                if (project !in projectWatchers) {
+                    projectWatchers[project] = projectsRepository.watcher(
+                        Query.ofJsonPath("/$project/$FLAGS_FILE_NAME", "$.*")
+                    ).map {
+                        mapper.readValue<List<Flag<Any>>>(it.toString())
+                    }.start()
+                }
+            }
         }
+
+        val watcher = projectWatchers[project]!!
+        val lastValue = watcher.initialValueFuture().await().value()
+            ?: throw IllegalArgumentException("Project '$project' not found")
+        val mutableFlow: MutableSharedFlow<Flag<Any>> = MutableSharedFlow(lastValue.size * 2 + 10)
+        watcher.watch { flags -> flags.map { mutableFlow.tryEmit(it) } }
+
         return mutableFlow
     }
 

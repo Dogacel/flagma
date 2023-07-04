@@ -4,3 +4,12 @@ services:
     image: line/centraldogma:latest
     ports:
       - "36462:36462"
+  flagma-server:
+    links:
+      - "centraldogma"
+    build:
+      context: ./flagma-server
+    ports:
+      - "9000:9000"
+    environment:
+      - DOGMA_HOST=centraldogma

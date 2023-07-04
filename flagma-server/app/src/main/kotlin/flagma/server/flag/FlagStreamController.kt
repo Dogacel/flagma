@@ -35,7 +35,7 @@ class FlagStreamController : KoinComponent {
     @ProducesEventStream
     @RequestTimeout(0)
     suspend fun getAllFlags(@Param project: String): Flow<ServerSentEvent> {
-        return flagStreamService.streamAllFlags(project).map {
+        return flagStreamService.streamProjectFlags(project).map {
             ServerSentEvent.ofData(mapper.writeValueAsString(it))
         }
     }

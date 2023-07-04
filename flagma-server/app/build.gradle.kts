@@ -6,6 +6,7 @@ import org.jetbrains.kotlin.gradle.tasks.KotlinCompilationTask
 
 plugins {
     id("flagma.server.kotlin-application-conventions")
+    id("org.jetbrains.kotlinx.kover") version "0.7.2"
 }
 
 dependencies {
@@ -18,13 +19,14 @@ dependencies {
 
     implementation("com.fasterxml.jackson.module:jackson-module-kotlin:2.15.2")
 
-    implementation("com.linecorp.centraldogma:centraldogma-client-armeria:0.61.3")
+    implementation("com.linecorp.centraldogma:centraldogma-client-armeria:0.61.4")
 
     implementation("io.insert-koin:koin-core:3.4.2")
     implementation("io.insert-koin:koin-logger-slf4j:3.4.1")
 
     testImplementation("io.insert-koin:koin-test:3.4.1")
-
+    testImplementation("io.insert-koin:koin-test-junit5:3.4.1")
+    testImplementation("com.linecorp.centraldogma:centraldogma-testing-junit:0.61.4")
 }
 
 tasks.named<KotlinCompilationTask<*>>("compileKotlin").configure {
@@ -32,6 +34,24 @@ tasks.named<KotlinCompilationTask<*>>("compileKotlin").configure {
         freeCompilerArgs.add("-java-parameters")
     }
 }
+
+tasks.register<Jar>("uberJar") {
+    duplicatesStrategy = DuplicatesStrategy.INCLUDE
+
+    archiveClassifier.set("uber")
+
+    manifest {
+        attributes["Main-Class"] = "flagma.server.app.AppKt"
+    }
+
+    from(sourceSets.main.get().output)
+
+    dependsOn(configurations.runtimeClasspath)
+    from({
+        configurations.runtimeClasspath.get().filter { it.name.endsWith("jar") }.map { zipTree(it) }
+    })
+}
+
 
 application {
     // Define the main class for the application.
