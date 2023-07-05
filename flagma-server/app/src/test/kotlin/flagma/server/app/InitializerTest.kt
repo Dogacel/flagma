@@ -4,8 +4,7 @@ import com.linecorp.centraldogma.client.CentralDogma
 import com.linecorp.centraldogma.testing.junit.CentralDogmaExtension
 import flagma.server.Config
 import io.kotest.assertions.throwables.shouldNotThrowAny
-import io.kotest.core.listeners.TestListener
-import io.kotest.core.spec.style.AnnotationSpec
+import io.kotest.core.spec.style.FunSpec
 import io.kotest.core.test.TestCaseOrder
 import io.kotest.extensions.junit5.JUnitExtensionAdapter
 import io.kotest.matchers.collections.shouldBeEmpty
@@ -15,30 +14,22 @@ import org.koin.dsl.module
 import org.koin.test.KoinTest
 import org.koin.test.junit5.KoinTestExtension
 
-class InitializerTest : AnnotationSpec(), KoinTest {
-    val extension: CentralDogmaExtension = CentralDogmaExtension()
+class InitializerTest : KoinTest, FunSpec({
+    val extension = CentralDogmaExtension()
     val koinTestExtension = KoinTestExtension.create {
         modules(
-            module {
-                single<CentralDogma> { extension.client() }
-            },
-            Modules.controllerModules,
-            Modules.serviceModules,
-            Modules.utilityModules,
+            module { single<CentralDogma> { extension.client() } },
+            Modules.repositoryModules,
         )
     }
 
-    override fun listeners(): List<TestListener> {
-        return listOf(
-            JUnitExtensionAdapter(extension),
-            JUnitExtensionAdapter(koinTestExtension),
-        )
-    }
+    testOrder = TestCaseOrder.Sequential
+    listeners(
+        JUnitExtensionAdapter(extension),
+        JUnitExtensionAdapter(koinTestExtension),
+    )
 
-    override fun testCaseOrder(): TestCaseOrder = TestCaseOrder.Sequential
-
-    @Test
-    fun appShouldInitialize() {
+    test("app should initialize") {
         // Dogma should be clean
         extension.client()
             .listProjects().join()
@@ -54,10 +45,9 @@ class InitializerTest : AnnotationSpec(), KoinTest {
             .keys.shouldContain(Config.CentralDogma.PROJECTS_REPOSITORY_NAME)
     }
 
-    @Test
-    fun appShouldInitializeAgain() {
+    test("app should initialize if already initialized") {
         shouldNotThrowAny {
             Initializer.initializeProject()
         }
     }
-}
+})

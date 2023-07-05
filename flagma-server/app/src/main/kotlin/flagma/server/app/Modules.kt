@@ -41,8 +41,7 @@ object Modules {
         singleOf<FlagStreamService>(::FlagStreamService)
     }
 
-    val utilityModules = module(createdAtStart = true) {
-        single<ObjectMapper> { jacksonObjectMapper() }
+    val repositoryModules = module(createdAtStart = true) {
         single<CentralDogmaRepository>(named(Config.CentralDogma.PROJECTS_REPOSITORY_NAME)) {
             get<CentralDogma>().forRepo(
                 Config.CentralDogma.PROJECT_NAME,
@@ -50,4 +49,10 @@ object Modules {
             )
         }
     }
+
+    val utilityModules = module(createdAtStart = true) {
+        single<ObjectMapper> { jacksonObjectMapper() }
+    }
+
+    val appModule = integrationModules + controllerModules + serviceModules + repositoryModules + utilityModules
 }

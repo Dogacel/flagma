@@ -27,6 +27,7 @@ dependencies {
     testImplementation("io.insert-koin:koin-test:3.4.1")
     testImplementation("io.insert-koin:koin-test-junit5:3.4.1")
     testImplementation("com.linecorp.centraldogma:centraldogma-testing-junit:0.61.4")
+    testImplementation(armeriaLib.armeria.junit5)
 }
 
 tasks.named<KotlinCompilationTask<*>>("compileKotlin").configure {
