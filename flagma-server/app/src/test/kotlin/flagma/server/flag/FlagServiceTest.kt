@@ -1,7 +1,5 @@
 package flagma.server.flag
 
-import com.fasterxml.jackson.databind.ObjectMapper
-import com.fasterxml.jackson.module.kotlin.jacksonObjectMapper
 import com.linecorp.centraldogma.client.CentralDogma
 import com.linecorp.centraldogma.testing.junit.CentralDogmaExtension
 import flagma.server.FlagNotFoundException
@@ -15,7 +13,6 @@ import io.kotest.data.blocking.forAll
 import io.kotest.data.row
 import io.kotest.extensions.junit5.JUnitExtensionAdapter
 import io.kotest.koin.KoinExtension
-import io.kotest.koin.KoinLifecycleMode
 import io.kotest.matchers.shouldBe
 import io.kotest.property.Arb
 import io.kotest.property.RandomSource
@@ -26,19 +23,21 @@ import org.koin.test.KoinTest
 
 class FlagServiceTest : KoinTest, FunSpec({
     val randomSource = RandomSource.seeded(2023_07_09)
-    val mapper: ObjectMapper = jacksonObjectMapper()
     val centralDogmaExtension = CentralDogmaExtension()
 
     val koinTestExtension = KoinExtension(
         modules = listOf(
-            module { single<CentralDogma> { centralDogmaExtension.client() } },
+            module {
+                single<CentralDogma> {
+                    centralDogmaExtension.client()
+                }
+            },
             Modules.repositoryModules,
         ),
-        mode = KoinLifecycleMode.Test,
     )
 
     beforeEach {
-        Initializer.initializeProject()
+        Initializer.initializeProject(centralDogmaExtension.client())
     }
 
     extensions(koinTestExtension, JUnitExtensionAdapter(centralDogmaExtension))
@@ -131,9 +130,9 @@ class FlagServiceTest : KoinTest, FunSpec({
                         CreateFlagBody(flagName, type = type, value = flagValue)
                     )
                     val flag = service.getFlag<Any>(projectName, flagName)
-                    flag?.name shouldBe flagName
-                    flag?.type shouldBe type
-                    flag?.value shouldBe flagValue
+                    flag.name shouldBe flagName
+                    flag.type shouldBe type
+                    flag.value shouldBe flagValue
                 }
             }
         }

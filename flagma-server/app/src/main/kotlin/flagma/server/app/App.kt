@@ -29,7 +29,7 @@ fun buildServer(koin: Koin, builder: ServerBuilder = Server.builder()): ServerBu
 
 suspend fun main() {
     val koin = startKoin()
-    Initializer.initializeProject()
+    Initializer.initializeProject(koin.get())
     val server = buildServer(koin).build()
 
     server.start().await()

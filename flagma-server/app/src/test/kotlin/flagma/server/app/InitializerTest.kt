@@ -35,7 +35,7 @@ class InitializerTest : KoinTest, FunSpec({
             .listProjects().join()
             .shouldBeEmpty()
 
-        Initializer.initializeProject()
+        Initializer.initializeProject(centralDogmaExtension.client())
 
         centralDogmaExtension.client()
             .listProjects().join()
@@ -47,7 +47,7 @@ class InitializerTest : KoinTest, FunSpec({
 
     test("app should initialize if already initialized") {
         shouldNotThrowAny {
-            Initializer.initializeProject()
+            Initializer.initializeProject(centralDogmaExtension.client())
         }
     }
 })

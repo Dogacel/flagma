@@ -16,7 +16,6 @@ import flagma.server.ProjectNotFoundException
 import flagma.server.project.ProjectService.Companion.FLAGS_FILE_NAME
 
 import org.slf4j.LoggerFactory
-import java.lang.IllegalArgumentException
 
 /**
  * Flag service is responsible for CRUD operations on Flags and persistence of Flags.
@@ -38,7 +37,7 @@ class FlagService : KoinComponent {
             projectsRepository.file(
                 Query.ofJson("/$project/$FLAGS_FILE_NAME")
             ).get().await()
-        } catch (e: com.linecorp.centraldogma.common.ProjectNotFoundException) {
+        } catch (e: EntryNotFoundException) {
             throw ProjectNotFoundException(project)
         }
 
@@ -78,6 +77,8 @@ class FlagService : KoinComponent {
             }
         } catch (e: QueryExecutionException) {
             throw FlagNotFoundException("${project}_$flagName")
+        } catch (e: EntryNotFoundException) {
+            throw ProjectNotFoundException(project)
         }
 
         return flag
@@ -139,7 +140,7 @@ class FlagService : KoinComponent {
         flagName: String,
         updateFlagValue: UpdateFlagValue<Any>
     ): Flag<Any> {
-        val flag = getFlag<Any>(project, flagName) ?: throw IllegalArgumentException("Flag $flagName not found")
+        val flag = getFlag<Any>(project, flagName)
 
         // Test changes by re-initializing the flag
         val newFlag = flag.copy(value = updateFlagValue.value)
