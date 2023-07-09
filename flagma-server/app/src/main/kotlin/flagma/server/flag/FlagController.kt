@@ -1,5 +1,6 @@
 package flagma.server.flag
 
+import com.fasterxml.jackson.databind.JsonNode
 import com.linecorp.armeria.common.logging.LogLevel
 import com.linecorp.armeria.server.annotation.*
 import com.linecorp.armeria.server.annotation.decorator.LoggingDecorator
@@ -30,7 +31,7 @@ class FlagController : KoinComponent {
 
     @Post("/{project}")
     @ProducesText
-    suspend fun createFlag(@Param project: String, createFlagBody: CreateFlagBody<*>): String {
+    suspend fun createFlag(@Param project: String, createFlagBody: CreateFlagBody<Any>): String {
         return flagService.createFlag(project, createFlagBody)
     }
 

@@ -11,11 +11,12 @@ import org.koin.core.component.inject
 import org.koin.core.qualifier.named
 import com.fasterxml.jackson.module.kotlin.jacksonObjectMapper
 import com.fasterxml.jackson.module.kotlin.readValue
+import flagma.server.FlagNotFoundException
+import flagma.server.ProjectNotFoundException
 import flagma.server.project.ProjectService.Companion.FLAGS_FILE_NAME
 
 import org.slf4j.LoggerFactory
 import java.lang.IllegalArgumentException
-import kotlin.reflect.KClass
 
 /**
  * Flag service is responsible for CRUD operations on Flags and persistence of Flags.
@@ -24,7 +25,7 @@ class FlagService : KoinComponent {
     private val logger = LoggerFactory.getLogger(FlagService::class.java)
 
     private val projectsRepository: CentralDogmaRepository by inject(named(Config.CentralDogma.PROJECTS_REPOSITORY_NAME))
-    private val mapper: ObjectMapper by inject()
+    private val mapper: ObjectMapper = jacksonObjectMapper()
 
     /**
      * Get all flags inside a project.
@@ -33,9 +34,13 @@ class FlagService : KoinComponent {
      * @return list of flags
      */
     suspend fun getAllFlags(project: String): List<Flag<Any>> {
-        val flagEntry: Entry<JsonNode> = projectsRepository.file(
-            Query.ofJson("/$project/$FLAGS_FILE_NAME")
-        ).get().await()
+        val flagEntry: Entry<JsonNode> = try {
+            projectsRepository.file(
+                Query.ofJson("/$project/$FLAGS_FILE_NAME")
+            ).get().await()
+        } catch (e: com.linecorp.centraldogma.common.ProjectNotFoundException) {
+            throw ProjectNotFoundException(project)
+        }
 
         if (!flagEntry.hasContent()) return listOf()
 
@@ -60,7 +65,7 @@ class FlagService : KoinComponent {
      * @param flagName name of the flag
      * @return the flag if exists else null
      */
-    suspend fun <T> getFlag(project: String, flagName: String): Flag<T>? {
+    suspend fun <T> getFlag(project: String, flagName: String): Flag<T> {
         val flag = try {
             val flagEntry: Entry<JsonNode> = projectsRepository.file(
                 Query.ofJsonPath("/$project/$FLAGS_FILE_NAME", "$.$flagName")
@@ -69,14 +74,21 @@ class FlagService : KoinComponent {
             if (flagEntry.hasContent()) {
                 mapper.readValue<Flag<T>>(flagEntry.content().toString())
             } else {
-                null
+                throw FlagNotFoundException("${project}_$flagName")
             }
         } catch (e: QueryExecutionException) {
-            logger.warn("Can't get flag $flagName.", e)
-            return null
+            throw FlagNotFoundException("${project}_$flagName")
         }
 
         return flag
+    }
+
+    suspend fun hasFlag(project: String, flagName: String): Boolean {
+        val projectEntry: Entry<JsonNode> = projectsRepository.file(
+            Query.ofJson("/$project/$FLAGS_FILE_NAME")
+        ).get().await()
+
+        return projectEntry.hasContent() && projectEntry.contentAsJson().has(flagName)
     }
 
     /**
@@ -86,8 +98,8 @@ class FlagService : KoinComponent {
      * @param createFlagBody parameters to create the flag
      * @return a message indicating the result of the operation
      */
-    suspend fun createFlag(project: String, createFlagBody: CreateFlagBody<*>): String {
-        if (getFlag<Any>(project, createFlagBody.name) != null) {
+    suspend fun createFlag(project: String, createFlagBody: CreateFlagBody<Any>): String {
+        if (hasFlag(project, createFlagBody.name)) {
             return "Flag ${createFlagBody.name} already exists"
         }
 
@@ -100,15 +112,7 @@ class FlagService : KoinComponent {
             value = createFlagBody.value,
         )
 
-
-        val flagJson = when (createFlagBody.type) {
-            FlagType.BOOLEAN -> mapper.writeValueAsString(flag.value as Boolean)
-            FlagType.STRING -> mapper.writeValueAsString(flag.value as String)
-            FlagType.NUMBER -> mapper.writeValueAsString(flag.value as Number)
-            FlagType.JSON -> mapper.writeValueAsString(flag.value as JsonNode)
-        }
-
-        println("flagJson: $flagJson")
+        val flagJson = mapper.writeValueAsString(flag)
 
         val result = projectsRepository.commit(
             "Create $flag",

@@ -1,5 +1,7 @@
 package flagma.server.flag
 
+import com.fasterxml.jackson.databind.ObjectMapper
+import com.fasterxml.jackson.module.kotlin.jacksonObjectMapper
 import com.linecorp.centraldogma.client.CentralDogma
 import com.linecorp.centraldogma.testing.junit.CentralDogmaExtension
 import flagma.server.FlagNotFoundException
@@ -9,6 +11,8 @@ import flagma.server.app.Modules
 import flagma.server.project.ProjectService
 import io.kotest.common.runBlocking
 import io.kotest.core.spec.style.FunSpec
+import io.kotest.data.blocking.forAll
+import io.kotest.data.row
 import io.kotest.extensions.junit5.JUnitExtensionAdapter
 import io.kotest.koin.KoinExtension
 import io.kotest.koin.KoinLifecycleMode
@@ -22,13 +26,13 @@ import org.koin.test.KoinTest
 
 class FlagServiceTest : KoinTest, FunSpec({
     val randomSource = RandomSource.seeded(2023_07_09)
+    val mapper: ObjectMapper = jacksonObjectMapper()
     val centralDogmaExtension = CentralDogmaExtension()
 
     val koinTestExtension = KoinExtension(
         modules = listOf(
             module { single<CentralDogma> { centralDogmaExtension.client() } },
             Modules.repositoryModules,
-            Modules.utilityModules,
         ),
         mode = KoinLifecycleMode.Test,
     )
@@ -96,64 +100,43 @@ class FlagServiceTest : KoinTest, FunSpec({
             val projectName = Arb.stringPattern("\\w+").single(randomSource)
             projectService.createProject(projectName)
 
-            runBlocking {
+            forAll<Arb<Any>, FlagType>(
+                row(Arb.string(), FlagType.STRING),
+                row(Arb.int(), FlagType.NUMBER),
+                row(Arb.double(), FlagType.NUMBER),
+                row(Arb.boolean(), FlagType.BOOLEAN),
+                row(
+                    Arb.constant(
+                        mapOf<String, Any?>(
+                            "a" to 1,
+                            "b" to "2",
+                            "c" to true,
+                            "d" to mapOf<String, Any?>(
+                                "e" to null,
+                                "f" to listOf<Any?>(
+                                    1, 2, "3", false, null, mapOf<String, Any?>("g" to 4), listOf<Any?>()
+                                )
+                            )
+                        )
+                    ),
+                    FlagType.JSON
+                ),
+            ) { generator, type ->
                 val flagName = Arb.stringPattern("\\w+").single(randomSource)
-                val flagValue = Arb.string().single(randomSource)
+                val flagValue = generator.single(randomSource)
 
-                service.createFlag(
-                    projectName,
-                    CreateFlagBody(flagName, type = FlagType.STRING, value = flagValue)
-                )
-                val flag = service.getFlag<String>(projectName, flagName)
-                flag?.name shouldBe flagName
-                flag?.type shouldBe FlagType.STRING
-                flag?.value shouldBe flagValue
-            }
-
-            runBlocking {
-                val flagName = Arb.stringPattern("\\w+").single(randomSource)
-                val flagValue = Arb.int().single(randomSource)
-
-                service.createFlag(
-                    projectName,
-                    CreateFlagBody(flagName, type = FlagType.NUMBER, value = flagValue)
-                )
-                val flag = service.getFlag<Int>(projectName, flagName)
-                flag?.name shouldBe flagName
-                flag?.type shouldBe FlagType.NUMBER
-                flag?.value shouldBe flagValue
-
-            }
-
-            runBlocking {
-                val flagName = Arb.stringPattern("\\w+").single(randomSource)
-                val flagValue = Arb.double().single(randomSource)
-
-                service.createFlag(
-                    projectName,
-                    CreateFlagBody(flagName, type = FlagType.NUMBER, value = flagValue)
-                )
-                val flag = service.getFlag<Double>(projectName, flagName)
-                flag?.name shouldBe flagName
-                flag?.type shouldBe FlagType.NUMBER
-                flag?.value shouldBe flagValue
-            }
-
-            runBlocking {
-                val flagName = Arb.stringPattern("\\w+").single(randomSource)
-                val flagValue = Arb.boolean().single(randomSource)
-
-                service.createFlag(
-                    projectName,
-                    CreateFlagBody(flagName, type = FlagType.BOOLEAN, value = flagValue)
-                )
-                val flag = service.getFlag<Boolean>(projectName, flagName)
-                flag?.name shouldBe flagName
-                flag?.type shouldBe FlagType.BOOLEAN
-                flag?.value shouldBe flagValue
+                runBlocking {
+                    service.createFlag(
+                        projectName,
+                        CreateFlagBody(flagName, type = type, value = flagValue)
+                    )
+                    val flag = service.getFlag<Any>(projectName, flagName)
+                    flag?.name shouldBe flagName
+                    flag?.type shouldBe type
+                    flag?.value shouldBe flagValue
+                }
             }
         }
-
     }
 
     context("updateFlagValue") { }

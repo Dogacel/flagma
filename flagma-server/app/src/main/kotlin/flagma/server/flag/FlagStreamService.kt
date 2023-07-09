@@ -1,6 +1,7 @@
 package flagma.server.flag
 
 import com.fasterxml.jackson.databind.ObjectMapper
+import com.fasterxml.jackson.module.kotlin.jacksonObjectMapper
 import com.fasterxml.jackson.module.kotlin.readValue
 import com.linecorp.centraldogma.client.CentralDogmaRepository
 import com.linecorp.centraldogma.client.Watcher
@@ -15,7 +16,6 @@ import org.koin.core.component.KoinComponent
 import org.koin.core.component.inject
 import org.koin.core.qualifier.named
 import org.slf4j.LoggerFactory
-import java.util.concurrent.CompletableFuture
 
 /**
  * Flag stream service serves flows of flags. Those flows are updated whenever the underlying flag is updated.
@@ -24,7 +24,7 @@ class FlagStreamService : KoinComponent {
     private val logger = LoggerFactory.getLogger(FlagService::class.java)
 
     private val projectsRepository: CentralDogmaRepository by inject(named(Config.CentralDogma.PROJECTS_REPOSITORY_NAME))
-    private val mapper: ObjectMapper by inject()
+    private val mapper: ObjectMapper = jacksonObjectMapper()
 
     /**
      * We have only a single watcher per project or feature flag, thus concurrent writes to the watcher map will

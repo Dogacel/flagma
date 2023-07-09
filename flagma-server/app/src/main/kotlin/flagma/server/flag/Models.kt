@@ -1,10 +1,12 @@
 package flagma.server.flag
 
+import com.fasterxml.jackson.databind.JsonNode
+
 // Typealias for flag types.
 typealias BooleanFlag = Flag<Boolean>
 typealias NumberFlag = Flag<Number>
 typealias StringFlag = Flag<String>
-typealias JsonFlag = Flag<Map<*, *>>
+typealias JsonFlag = Flag<JsonNode>
 
 /**
  * Flag represents a feature flag. Feature flags are shared variables that can be changed ad-hoc. They can be

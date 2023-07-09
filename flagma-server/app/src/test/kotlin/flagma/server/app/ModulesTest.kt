@@ -1,6 +1,5 @@
 package flagma.server.app
 
-import com.fasterxml.jackson.databind.ObjectMapper
 import com.linecorp.centraldogma.client.CentralDogmaRepository
 import com.linecorp.centraldogma.testing.junit.CentralDogmaExtension
 import flagma.server.flag.FlagController
@@ -53,16 +52,6 @@ class ModulesTest : KoinTest, FunSpec({
                 extraTypes = listOf(
                     CentralDogmaRepository::class
                 ),
-            )
-        }
-    }
-
-    xcontext(Modules::utilityModules.name) {
-        test("should have object mapper") {
-            Modules.utilityModules.verify(
-                extraTypes = listOf(
-                    ObjectMapper::class,
-                )
             )
         }
     }

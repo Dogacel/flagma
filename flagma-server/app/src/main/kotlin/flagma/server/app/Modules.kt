@@ -1,7 +1,5 @@
 package flagma.server.app
 
-import com.fasterxml.jackson.databind.ObjectMapper
-import com.fasterxml.jackson.module.kotlin.jacksonObjectMapper
 import com.linecorp.centraldogma.client.CentralDogma
 import com.linecorp.centraldogma.client.CentralDogmaRepository
 import com.linecorp.centraldogma.client.armeria.ArmeriaCentralDogmaBuilder
@@ -50,9 +48,5 @@ object Modules {
         }
     }
 
-    val utilityModules = module(createdAtStart = true) {
-        single<ObjectMapper> { jacksonObjectMapper() }
-    }
-
-    val appModule = integrationModules + controllerModules + serviceModules + repositoryModules + utilityModules
+    val appModule = integrationModules + controllerModules + serviceModules + repositoryModules
 }

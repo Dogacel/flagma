@@ -1,6 +1,7 @@
 package flagma.server.flag
 
 import com.fasterxml.jackson.databind.ObjectMapper
+import com.fasterxml.jackson.module.kotlin.jacksonObjectMapper
 import com.linecorp.armeria.common.logging.LogLevel
 import com.linecorp.armeria.common.sse.ServerSentEvent
 import com.linecorp.armeria.server.annotation.*
@@ -21,7 +22,7 @@ import org.slf4j.LoggerFactory
 @CorsDecorator(origins = ["*"])
 class FlagStreamController : KoinComponent {
     private val logger = LoggerFactory.getLogger(FlagStreamController::class.java)
-    private val mapper: ObjectMapper by inject()
+    private val mapper: ObjectMapper = jacksonObjectMapper()
 
     private val flagStreamService by inject<FlagStreamService>()
 
