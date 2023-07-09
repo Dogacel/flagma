@@ -15,6 +15,7 @@ import flagma.server.project.ProjectService.Companion.FLAGS_FILE_NAME
 
 import org.slf4j.LoggerFactory
 import java.lang.IllegalArgumentException
+import kotlin.reflect.KClass
 
 /**
  * Flag service is responsible for CRUD operations on Flags and persistence of Flags.
@@ -85,7 +86,7 @@ class FlagService : KoinComponent {
      * @param createFlagBody parameters to create the flag
      * @return a message indicating the result of the operation
      */
-    suspend fun createFlag(project: String, createFlagBody: CreateFlagBody): String {
+    suspend fun createFlag(project: String, createFlagBody: CreateFlagBody<*>): String {
         if (getFlag<Any>(project, createFlagBody.name) != null) {
             return "Flag ${createFlagBody.name} already exists"
         }
@@ -99,13 +100,21 @@ class FlagService : KoinComponent {
             value = createFlagBody.value,
         )
 
-        val flagJsonString = mapper.writeValueAsString(flag)
+
+        val flagJson = when (createFlagBody.type) {
+            FlagType.BOOLEAN -> mapper.writeValueAsString(flag.value as Boolean)
+            FlagType.STRING -> mapper.writeValueAsString(flag.value as String)
+            FlagType.NUMBER -> mapper.writeValueAsString(flag.value as Number)
+            FlagType.JSON -> mapper.writeValueAsString(flag.value as JsonNode)
+        }
+
+        println("flagJson: $flagJson")
 
         val result = projectsRepository.commit(
             "Create $flag",
             Change.ofJsonPatch(
                 "/$project/$FLAGS_FILE_NAME",
-                """[{ "op": "add", "path": "/${flag.name}", "value": $flagJsonString }]"""
+                """[{ "op": "add", "path": "/${flag.name}", "value": $flagJson }]"""
             )
         ).push().await()
 

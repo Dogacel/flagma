@@ -30,7 +30,7 @@ class FlagController : KoinComponent {
 
     @Post("/{project}")
     @ProducesText
-    suspend fun createFlag(@Param project: String, createFlagBody: CreateFlagBody): String {
+    suspend fun createFlag(@Param project: String, createFlagBody: CreateFlagBody<*>): String {
         return flagService.createFlag(project, createFlagBody)
     }
 

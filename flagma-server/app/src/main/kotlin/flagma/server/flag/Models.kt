@@ -75,12 +75,12 @@ enum class FlagType {
  * @property type type of the flag
  * @property value value of the flag
  */
-data class CreateFlagBody(
+data class CreateFlagBody<T>(
     val name: String,
     val description: String = "",
     val tags: List<String> = listOf(),
     val type: FlagType,
-    val value: Any,
+    val value: T,
 )
 
 /**

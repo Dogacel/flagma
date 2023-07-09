@@ -10,43 +10,42 @@ import flagma.server.project.ProjectService
 import io.kotest.core.spec.style.FunSpec
 import io.kotest.core.test.TestCaseOrder
 import io.kotest.extensions.junit5.JUnitExtensionAdapter
+import io.kotest.koin.KoinExtension
 import io.kotest.matchers.shouldBe
+import org.junit.jupiter.api.extension.ExtensionContext
 import org.koin.dsl.module
 import org.koin.test.KoinTest
-import org.koin.test.junit5.KoinTestExtension
-import org.koin.test.junit5.mock.MockProviderExtension
-import org.koin.test.mock.MockProvider
 import org.koin.test.mock.declareMock
 
 class AppTest : KoinTest, FunSpec() {
     init {
         val centralDogmaExtension = CentralDogmaExtension()
-        val koinTestExtension = KoinTestExtension.create {
-            allowOverride(true)
-            modules(
-                Modules.appModule + module { single<CentralDogma> { centralDogmaExtension.client() } },
-            )
-        }
-        val serverExtension = object : ServerExtension() {
+        val koinTestExtension = KoinExtension(
+            modules = Modules.appModule + module { single<CentralDogma> { centralDogmaExtension.client() } },
+        )
+        val serverExtension = object : ServerExtension(false) {
             override fun configure(sb: ServerBuilder) {
-                buildServer(getKoin(), sb)
+                buildServer(this@AppTest.getKoin(), sb)
+            }
+
+            override fun beforeEach(context: ExtensionContext) {
+                super.beforeEach(context)
+                start()
+            }
+
+            override fun afterEach(context: ExtensionContext) {
+                super.afterEach(context)
+                stop()
             }
         }
 
-        beforeTest {
-            serverExtension.start()
-        }
-
-        afterTest {
-            serverExtension.stop()
-        }
-
         testOrder = TestCaseOrder.Sequential
-        listeners(
-            JUnitExtensionAdapter(centralDogmaExtension),
-            JUnitExtensionAdapter(koinTestExtension),
-        )
 
+        extensions(
+            koinTestExtension,
+            JUnitExtensionAdapter(centralDogmaExtension),
+            JUnitExtensionAdapter(serverExtension),
+        )
 
         test("should run") {
             serverExtension.blockingWebClient()

@@ -19,6 +19,7 @@ dependencies {
 
     testImplementation("io.kotest:kotest-runner-junit5:5.6.2")
     testImplementation("io.kotest:kotest-extensions-junit5:5.6.2")
+    testImplementation("io.kotest.extensions:kotest-extensions-koin:1.1.0")
     testImplementation("io.kotest:kotest-assertions-core:5.6.2")
     testImplementation("io.kotest:kotest-property:5.6.2")
 }
