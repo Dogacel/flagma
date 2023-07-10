@@ -85,9 +85,13 @@ class FlagService : KoinComponent {
     }
 
     suspend fun hasFlag(project: String, flagName: String): Boolean {
-        val projectEntry: Entry<JsonNode> = projectsRepository.file(
-            Query.ofJson("/$project/$FLAGS_FILE_NAME")
-        ).get().await()
+        val projectEntry: Entry<JsonNode> = try {
+            projectsRepository.file(
+                Query.ofJson("/$project/$FLAGS_FILE_NAME")
+            ).get().await()
+        } catch (e: EntryNotFoundException) {
+            throw ProjectNotFoundException(project)
+        }
 
         return projectEntry.hasContent() && projectEntry.contentAsJson().has(flagName)
     }
@@ -170,7 +174,7 @@ class FlagService : KoinComponent {
      * @return a message indicating the result of the operation
      */
     suspend fun deleteFlag(project: String, flagName: String): String {
-        val result =
+        val result = try {
             projectsRepository.commit(
                 "Delete $flagName",
                 Change.ofJsonPatch(
@@ -179,6 +183,12 @@ class FlagService : KoinComponent {
             """.trimIndent()
                 )
             ).push().await()
+        } catch (e: ChangeConflictException) {
+            if (hasFlag(project, flagName)) {
+                throw FlagNotFoundException("${project}_$flagName")
+            }
+            throw ProjectNotFoundException(project)
+        }
 
 
         return "Deleted at " + result.whenAsText() + ", Revision: " + result.revision().text()
