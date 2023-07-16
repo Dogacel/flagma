@@ -2,46 +2,16 @@
 sidebar_position: 1
 ---
 
-# Tutorial Intro
+# What is Flagma?
 
-Let's discover **Docusaurus in less than 5 minutes**.
+**Flagma** is an open-source, low latency, high throughput Feature Flag manager built on top of Git using [Central Dogma](https://line.github.io/centraldogma/).
 
-## Getting Started
+### What is a Feature Flag?
 
-Get started by **creating a new site**.
+Feature flags are small variables used to control the availability and behavior of specific features or functionalities of an application at runtime **without needing to re-deploy or write code**. Some benefits of using feature flags are,
 
-Or **try Docusaurus immediately** with **[docusaurus.new](https://docusaurus.new)**.
-
-### What you'll need
-
-- [Node.js](https://nodejs.org/en/download/) version 16.14 or above:
-  - When installing Node.js, you are recommended to check all checkboxes related to dependencies.
-
-## Generate a new site
-
-Generate a new Docusaurus site using the **classic template**.
-
-The classic template will automatically be added to your project after you run the command:
-
-```bash
-npm init docusaurus@latest my-website classic
-```
-
-You can type this command into Command Prompt, Powershell, Terminal, or any other integrated terminal of your code editor.
-
-The command also installs all necessary dependencies you need to run Docusaurus.
-
-## Start your site
-
-Run the development server:
-
-```bash
-cd my-website
-npm run start
-```
-
-The `cd` command changes the directory you're working with. In order to work with your newly created Docusaurus site, you'll need to navigate the terminal there.
-
-The `npm run start` command builds your website locally and serves it through a development server, ready for you to view at http://localhost:3000/.
-
-Open `docs/intro.md` (this page) and edit some lines: the site **reloads automatically** and displays your changes.
+- **Progressive Rollouts**: Feature flags enable gradual feature rollouts by activating them for a subset of users or specific environments. This approach helps mitigate risks and allows for testing in a controlled manner before a full release.
+- **A/B Testing**: By enabling feature flags for different user groups, developers can compare the impact and effectiveness of different variations or implementations of a feature.
+- **Hotfixes and Rollbacks**: If a critical bug or issue arises, feature flags can be used to quickly disable the affected feature without deploying new code. This facilitates rapid response and minimizes downtime.
+- **Continuous Integration and Delivery**: Feature flags decouple feature releases from code deployments, enabling continuous integration and delivery practices. Developers can merge code changes to the main branch and activate or deactivate features independently.
+- **Feature Customization**: Feature flags allow developers to personalize or customize features for specific users or user groups. By enabling or disabling flags based on user attributes or preferences, developers can tailor the experience to different segments.
