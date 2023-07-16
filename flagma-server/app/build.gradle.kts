@@ -16,6 +16,7 @@ dependencies {
 
     implementation("net.logstash.logback:logstash-logback-encoder:7.4")
     runtimeOnly(armeriaLib.logback14)
+    implementation("io.micrometer:micrometer-registry-prometheus:latest.release")
 
     implementation("com.fasterxml.jackson.module:jackson-module-kotlin:2.15.2")
 

@@ -4,7 +4,10 @@ services:
     image: line/centraldogma:latest
     ports:
       - "36462:36462"
+
   flagma-server:
+    depends_on:
+      - centraldogma
     links:
       - "centraldogma"
     build:
@@ -13,3 +16,24 @@ services:
       - "9000:9000"
     environment:
       - DOGMA_HOST=centraldogma
+    profiles:
+      - server
+  
+  # Observability
+  prometheus:
+    image: prom/prometheus:latest
+    ports:
+      - "9090:9090"
+    volumes:
+      - "./observability/prometheus.yml:/etc/prometheus/prometheus.yml"
+      - "./observability/prometheus:/prometheus"
+  
+  grafana:
+    image: grafana/grafana:latest
+    links:
+      - "prometheus"
+    ports:
+      - "3000:3000"
+    volumes:
+      - "./observability/grafana:/var/lib/grafana"
+
