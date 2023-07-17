@@ -2,7 +2,7 @@
 sidebar_position: 2
 ---
 
-# Getting Started
+# Overview
 
 **Flagma** is a self-hosted service. But for learning purposes, we have a public website that you can use to start learning about **Flagma**.
 
