@@ -4,12 +4,6 @@ sidebar_position: 5
 
 # Add to Your Client
 
-:::tip
-
-**Flagma** currently doesn't have client libraries. Because we are HTTP based, implementing a library for your favorite language/framework is very easy. Please **contribute** by opening a PR for a new client library. For more info on **implementing client libraries**, visit **Advanced/Developing Client Libraries** section.
-
-:::
-
 Now, as you created your first **Flag**, we need someone to use that! Feature flags can be consumed by anyone, ranging from servers to mobile devices, even including IoT devices.
 
 There are **2** main ways to connect your clients to use feature flags:
@@ -17,9 +11,9 @@ There are **2** main ways to connect your clients to use feature flags:
 - Request a flag each time.
 - Subscribe to flag updates.
 
-:::caution
+:::tip
 
-Depending on the **client type**, you might want to consider trade-off each implementation. For example, sending request constantly will not be ideal for mobile clients as you will use a lot of data from the cellular network.
+**Flagma** currently doesn't have client libraries. Because we are HTTP based, implementing a library for your favorite language/framework is very easy. Please **contribute** by opening a PR for a new client library. For more info on **implementing client libraries**, visit **Advanced/Developing Client Libraries** section.
 
 :::
 
@@ -57,7 +51,7 @@ Sometimes the client can request a flag **thousands of times per second**. In th
 
 :::info
 
-This is the recommended way for applications that need **super-low latency** and that request flags with **very high throughput**.
+This is the recommended way for applications that need **super-low latency** or **very high throughput** feature flags.
 
 :::
 
